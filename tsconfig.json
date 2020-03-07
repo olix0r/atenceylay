@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "outDir": "./target/",
+        "sourceMap": true,
+        "importHelpers": true,
+        "resolveJsonModule": true,
+        "noImplicitAny": true,
+        "module": "commonjs",
+        "target": "esnext",
+        "jsx": "react",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "strictNullChecks": true
+    },
+    "include": [
+        "./src/**/*"
+    ]
+}
