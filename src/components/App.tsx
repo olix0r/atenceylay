@@ -22,9 +22,9 @@ export default class App extends React.Component<Props, {}> {
         const { width, rowHeight, margin, reports } = this.props;
 
         const maxLatency = d3.max(reports, r => d3.max(r.report.DurationHistogram.Data, d => d.End));
-        console.log(maxLatency! * 1000);
+        console.log(maxLatency!);
         const x = d3.scaleLinear()
-            .domain([0, maxLatency! * 1000])
+            .domain([0, maxLatency!])
             .rangeRound([margin.left, width - margin.left - margin.right]);
 
         const y = d3.scaleBand()
@@ -33,7 +33,7 @@ export default class App extends React.Component<Props, {}> {
 
         reports.forEach(r => {
             r.report.DurationHistogram.Data.forEach(d => {
-                console.log(r.name, d, x(d.Start * 1000), x(d.End * 1000));
+                console.log(r.name, d, x(d.Start), x(d.End));
             });
         });
 
@@ -43,11 +43,15 @@ export default class App extends React.Component<Props, {}> {
             .attr('height', margin.top + margin.bottom + reports.length * rowHeight);
 
         const maxCount = d3.max(reports, r => d3.max(r.report.DurationHistogram.Data, d => d.Count));
-        const boxColor = d3.scaleSequential(d3.interpolateCool).domain([0, maxCount!]);
+        const boxColor = d3.scaleSequential(d3.interpolateCool).domain([0, Math.pow(maxCount!, 0.5)]);
+        const barColor = d3.scaleOrdinal(d3.schemeYlOrRd[5])
+            .domain(["50", "75", "90", "99", "99.9"]);
 
         svg.append("g").call(g => g
             .attr("transform", `translate(0,${margin.top})`)
-            .call(d3.axisTop(x).ticks((width - margin.left - margin.right) / 100, ".02f"))
+            .call(d3.axisTop(x)
+                .tickSize((width - margin.left - margin.right) / 100)
+                .tickFormat((n: number) => `${n * 1000}ms`))
             .call(g => g.selectAll(".domain").remove()));
 
         svg.append("g").call(g => g
@@ -65,21 +69,21 @@ export default class App extends React.Component<Props, {}> {
             .selectAll("rect")
             .data(({ report }) => report.DurationHistogram.Data)
             .join("rect")
-            .attr("x", d => x(d.Start * 1000) + 1)
-            .attr("width", d => x(d.End * 1000) - x(d.Start * 1000) - 1)
+            .attr("x", d => x(d.Start) + 1)
+            .attr("width", d => x(d.End) - x(d.Start) - 1)
             .attr("height", y.bandwidth() - 1)
-            .attr("fill", d => boxColor(d.Count))
-            .append("title").text(d => `${d.Count} reqs [${d.Start * 1000}ms..${d.End * 1000}ms)`);
+            .attr("fill", d => boxColor(Math.pow(d.Count, 0.5)))
+            .append("title").text(d => `${d.Count} reqs [${d.Start}ms..${d.End}ms)`);
 
         row.append("g")
             .selectAll("rect")
             .data(r => r.report.DurationHistogram.Percentiles)
             .join("rect")
-            .attr("x", p => x(p.Value * 1000))
+            .attr("x", p => x(p.Value))
             .attr("width", 3)
             .attr("height", y.bandwidth() - 1)
-            .attr("fill", "#fa0")
-            .append("title").text(p => `${p.Percentile} percentile ${p.Value * 1000}ms`);
+            .attr("fill", p => barColor(`${p.Percentile}`))
+            .append("title").text(p => `${p.Percentile} percentile ${p.Value}ms`);
     }
 
     render() {
